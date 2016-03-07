@@ -68,4 +68,17 @@ public:
   virtual bool handle_response(evbuffer* input, bool &done);
 };
 
+class ProtocolMasstree : public Protocol {
+public:
+  ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev):
+    Protocol(opts, conn, bev) {};
+  ~ProtocolMasstree() {};
+
+  virtual bool setup_connection_w();
+  virtual bool setup_connection_r(evbuffer* input);
+  virtual int  get_request(const char* key);
+  virtual int  set_request(const char* key, const char* value, int len);
+  virtual bool handle_response(evbuffer* input, bool &done);
+};
+
 #endif

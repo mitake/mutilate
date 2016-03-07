@@ -200,3 +200,21 @@ bool ProtocolBinary::handle_response(evbuffer *input, bool &done) {
   return true;
 }
 
+// masstree protocol implementation
+
+bool ProtocolMasstree::setup_connection_w() {
+}
+
+bool ProtocolMasstree::setup_connection_r(evbuffer* input) {
+}
+
+int ProtocolMasstree::get_request(const char* key) {
+}
+
+int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
+}
+
+bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
+}
+
+

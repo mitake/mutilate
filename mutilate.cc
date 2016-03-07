@@ -1058,6 +1058,7 @@ void args_to_options(options_t* options) {
   //  else
   options->records = args.records_arg / options->server_given;
 
+  options->masstree = args.masstree_given;
   options->binary = args.binary_given;
   options->sasl = args.username_given;
   

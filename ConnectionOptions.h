@@ -10,6 +10,7 @@ typedef struct {
   int qps;
   int records;
 
+  bool masstree;
   bool binary;
   bool sasl;
   char username[32];

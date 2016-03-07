@@ -46,7 +46,9 @@ Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
   bufferevent_setcb(bev, bev_read_cb, bev_write_cb, bev_event_cb, this);
   bufferevent_enable(bev, EV_READ | EV_WRITE);
 
-  if (options.binary) {
+  if (options.masstree) {
+    prot = new ProtocolMasstree(options, this, bev);
+  } else if (options.binary) {
     prot = new ProtocolBinary(options, this, bev);
   } else {
     prot = new ProtocolAscii(options, this, bev);
