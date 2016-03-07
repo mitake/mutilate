@@ -25,8 +25,12 @@
 
 #define arraysize(a) (sizeof(a) / sizeof((a)[0]))
 
+#ifndef likely
 #define likely(x) __builtin_expect(!!(x), 1)
+#endif
+#ifndef unlikely
 #define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
 
 #define PRIdOFF_T "ld"
 
