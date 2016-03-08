@@ -139,7 +139,7 @@ class ProtocolMasstree : public Protocol {
     ScanDone
   };
 
-  int seq_;
+  int seq_get_, seq_set_;
 
   outbuf *out_;
 
