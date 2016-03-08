@@ -282,6 +282,8 @@ int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
 }
 
 bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
+  // TODO: need to parse msgpack header
+
   inbuflen_ = evbuffer_get_length(input);
   if (!inbuflen_)		// FIXME: what is this?
     return false;
