@@ -201,20 +201,76 @@ bool ProtocolBinary::handle_response(evbuffer *input, bool &done) {
 }
 
 // masstree protocol implementation
+#include "json.hh"
+#include "msgpack.hh"
+#include <assert.h>
+#include <string.h>
 
-bool ProtocolMasstree::setup_connection_w() {
+#define MASSTREE_MAXKEYLEN 255	// FIXME
+
+static outbuf* new_outbuf(int buflen) {
+  outbuf* buf = static_cast<outbuf *>(malloc(sizeof(*buf)));
+  assert(buf);
+  memset(buf, 0, sizeof(*buf));
+  buf->capacity = buflen;
+  buf->buf = (char*) malloc(buf->capacity); 
+  assert(buf->buf);
+  return buf;
 }
 
-bool ProtocolMasstree::setup_connection_r(evbuffer* input) {
+ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev) : Protocol(opts, conn, bev) {
+  lcdf::Json handshake;
+
+  out_ = new_outbuf(64 * 1024);
+
+  handshake.resize(3);
+  handshake[0] = 0;
+  handshake[1] = Cmd_Handshake;
+  handshake[2] = lcdf::Json::make_object().set("core", -1)
+    .set("maxkeylen", MASSTREE_MAXKEYLEN);
+
+  msgpack::unparse(*out_, handshake);
+  bufferevent_write(bev, out_->buf, out_->n);
 }
 
 int ProtocolMasstree::get_request(const char* key) {
+  lcdf::Json getReq;
+
+  getReq.resize(3);
+  getReq[0] = seq_++;
+  getReq[1] = Cmd_Get;
+  getReq[2] = lcdf::String::make_stable(key);
+
+  lcdf::String serialized = getReq.unparse();
+  int len = serialized.length();
+  bufferevent_write(bev, serialized.c_str(), len);
+
+  return len;
 }
 
 int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
+  lcdf::Json putReq;
+
+  putReq.resize(4);
+  putReq[0] = seq_++;
+  putReq[1] = Cmd_Replace;
+  putReq[2] = lcdf::String::make_stable(key);
+  putReq[3] = lcdf::String::make_stable(value);
+
+  lcdf::String serialized = putReq.unparse();
+  int reqLen = serialized.length();
+  bufferevent_write(bev, serialized.c_str(), reqLen);
+
+  return len;
 }
 
 bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
+  // FIXME
+  int length = evbuffer_get_length(input);
+  evbuffer_drain(input, length);
+
+  done = true;
+  return true;
 }
 
 

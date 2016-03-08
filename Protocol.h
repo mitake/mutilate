@@ -68,14 +68,87 @@ public:
   virtual bool handle_response(evbuffer* input, bool &done);
 };
 
+/* masstree protocol */
+#include <assert.h>
+#include <stdlib.h>
+
+struct outbuf {			// something like kvout
+    char* buf;
+    unsigned capacity; // allocated size of buf
+    unsigned n;   // # of chars we've written to buf
+
+    inline void append(char c);
+    inline char* reserve(int n);
+    inline void adjust_length(int delta);
+    inline void set_end(char* end);
+    inline void grow(unsigned want);
+};
+
+inline void outbuf::append(char c) {
+  if (n == capacity)
+      grow(0);
+  buf[n] = c;
+  ++n;
+}
+
+inline char* outbuf::reserve(int nchars) {
+  if (n + nchars > capacity)
+      grow(n + nchars);
+  return buf + n;
+}
+
+inline void outbuf::adjust_length(int delta) {
+  n += delta;
+}
+
+inline void outbuf::set_end(char* x) {
+  n = x - buf;
+}
+
+inline void outbuf::grow(unsigned want) {
+  if (want == 0)
+      want = capacity + 1;
+  while (want > capacity)
+      capacity *= 2;
+  buf = (char*) realloc(buf, capacity);
+  assert(buf);
+}
+
+#include "msgpack.hh"
+
 class ProtocolMasstree : public Protocol {
+  enum {
+    Cmd_None = 0,
+    Cmd_Get = 2,
+    Cmd_Scan = 4,
+    Cmd_Put = 6,
+    Cmd_Replace = 8,
+    Cmd_Remove = 10,
+    Cmd_Checkpoint = 12,
+    Cmd_Handshake = 14,
+    Cmd_Max
+  };
+
+  enum result_t {
+    NotFound = -2,
+    Retry,
+    OutOfDate,
+    Inserted,
+    Updated,
+    Found,
+    ScanDone
+  };
+
+  int seq_;
+
+  outbuf *out_;
+
 public:
-  ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev):
-    Protocol(opts, conn, bev) {};
+  ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev);
   ~ProtocolMasstree() {};
 
-  virtual bool setup_connection_w();
-  virtual bool setup_connection_r(evbuffer* input);
+  virtual bool setup_connection_w() { return true; }
+  virtual bool setup_connection_r(evbuffer* input) { return true; }
   virtual int  get_request(const char* key);
   virtual int  set_request(const char* key, const char* value, int len);
   virtual bool handle_response(evbuffer* input, bool &done);
