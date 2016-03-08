@@ -143,6 +143,21 @@ class ProtocolMasstree : public Protocol {
 
   outbuf *out_;
 
+  enum { inbufsz = 64 * 1024, inbufrefill = 56 * 1024 };
+  char *inbuf_;
+  int inbufpos_;
+  int inbuflen_;
+  msgpack::streaming_parser parser_;
+
+  const lcdf::Json& receive();
+
+  enum {
+    MT_WAITING_HANDSHAKE_RESPONSE = 0,
+    MT_HANDSHAKED = 1,
+  };
+
+  int state_;
+
 public:
   ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev);
   ~ProtocolMasstree() {};

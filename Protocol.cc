@@ -218,6 +218,18 @@ static outbuf* new_outbuf(int buflen) {
   return buf;
 }
 
+const lcdf::Json& ProtocolMasstree::receive() {
+  while (!parser_.done())
+    inbufpos_ += parser_.consume(inbuf_ + inbufpos_,
+				 inbuflen_ - inbufpos_,
+				 lcdf::String::make_stable(inbuf_, inbufsz));
+  if (parser_.success() && parser_.result().is_a())
+    parser_.reset();
+  else
+    parser_.result() = lcdf::Json();
+  return parser_.result();
+}
+
 ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev) : Protocol(opts, conn, bev) {
   lcdf::Json handshake;
 
@@ -229,48 +241,61 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
   handshake[2] = lcdf::Json::make_object().set("core", -1)
     .set("maxkeylen", MASSTREE_MAXKEYLEN);
 
+  // send handshake request
   msgpack::unparse(*out_, handshake);
   bufferevent_write(bev, out_->buf, out_->n);
+
+  // handshake response will be received in handle_response()
+  state_ = MT_WAITING_HANDSHAKE_RESPONSE;
 }
 
 int ProtocolMasstree::get_request(const char* key) {
   lcdf::Json getReq;
-
   getReq.resize(3);
   getReq[0] = seq_++;
   getReq[1] = Cmd_Get;
   getReq[2] = lcdf::String::make_stable(key);
 
-  lcdf::String serialized = getReq.unparse();
-  int len = serialized.length();
-  bufferevent_write(bev, serialized.c_str(), len);
+  msgpack::unparse(*out_, getReq);
+  bufferevent_write(bev, out_->buf, out_->n);
 
-  return len;
+  return out_->n;
 }
 
 int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
   lcdf::Json putReq;
-
   putReq.resize(4);
   putReq[0] = seq_++;
   putReq[1] = Cmd_Replace;
   putReq[2] = lcdf::String::make_stable(key);
   putReq[3] = lcdf::String::make_stable(value);
 
-  lcdf::String serialized = putReq.unparse();
-  int reqLen = serialized.length();
-  bufferevent_write(bev, serialized.c_str(), reqLen);
-
-  return len;
+  msgpack::unparse(*out_, putReq);
+  bufferevent_write(bev, out_->buf, out_->n);
+  return out_->n;
 }
 
 bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
-  // FIXME
-  int length = evbuffer_get_length(input);
-  evbuffer_drain(input, length);
+  inbuflen_ = evbuffer_get_length(input);
+  inbuf_ = reinterpret_cast<char *>(evbuffer_pullup(input, -1));
+  inbufpos_ = 0;
+  const lcdf::Json& rsp = receive();
+
+  switch (state_) {
+  case MT_WAITING_HANDSHAKE_RESPONSE: // unlikely,
+    state_ = MT_HANDSHAKED;
+    break;
+  case MT_HANDSHAKED:
+    // do nothing?
+    break;
+  default:
+    printf("invalid state of masstree protocol: %d\n", state_);
+    exit(1);
+    break;
+  }
+
+  evbuffer_drain(input, inbuflen_);
 
   done = true;
   return true;
 }
-
-
