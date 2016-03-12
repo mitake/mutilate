@@ -151,13 +151,6 @@ class ProtocolMasstree : public Protocol {
 
   const lcdf::Json& receive();
 
-  enum {
-    MT_WAITING_HANDSHAKE_RESPONSE = 0,
-    MT_HANDSHAKED = 1,
-  };
-
-  int state_;
-
 public:
   ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev);
   ~ProtocolMasstree() {};

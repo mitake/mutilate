@@ -245,9 +245,6 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
   msgpack::unparse(*out_, handshake);
   bufferevent_write(bev, out_->buf, out_->n);
   out_->n = 0;
-
-  // handshake response will be received in handle_response()
-  state_ = MT_WAITING_HANDSHAKE_RESPONSE;
 }
 
 bool ProtocolMasstree::setup_connection_r(evbuffer* input)
