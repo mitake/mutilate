@@ -252,8 +252,23 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
 
 bool ProtocolMasstree::setup_connection_r(evbuffer* input)
 {
-  bool b;
-  return handle_response(input, b);
+  inbuflen_ = evbuffer_get_length(input);
+  if (!inbuflen_)
+    DIE("handshake failed, input length is 0");
+
+  inbuf_ = reinterpret_cast<char *>(evbuffer_pullup(input, inbuflen_));
+  inbufpos_ = 0;
+  const lcdf::Json& rsp = receive();
+
+  if (!rsp.is_a() || rsp[1] != Cmd_Handshake + 1 || !rsp[2])
+    DIE("handshake failed, invalid response");
+
+  evbuffer_drain(input, inbuflen_);
+
+  conn->stats.rx_bytes += inbuflen_;
+  inbufpos_ = inbuflen_ = 0;
+
+  return true;
 }
 
 int ProtocolMasstree::get_request(const char* key) {
@@ -288,31 +303,9 @@ int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
 }
 
 bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
-  // TODO: need to parse msgpack header
-
   inbuflen_ = evbuffer_get_length(input);
   if (!inbuflen_)		// FIXME: what is this?
     return true;
-
-  inbuf_ = reinterpret_cast<char *>(evbuffer_pullup(input, inbuflen_));
-  inbufpos_ = 0;
-  const lcdf::Json& rsp = receive();
-
-  switch (state_) {
-  case MT_WAITING_HANDSHAKE_RESPONSE: // unlikely,
-    state_ = MT_HANDSHAKED;
-    if (!rsp.is_a() || rsp[1] != Cmd_Handshake + 1 || !rsp[2])
-      DIE("handshake failed\n");
-
-    break;
-  case MT_HANDSHAKED:
-    // do nothing?
-    break;
-  default:
-    printf("invalid state of masstree protocol: %d\n", state_);
-    exit(1);
-    break;
-  }
 
   evbuffer_drain(input, inbuflen_);
   conn->stats.rx_bytes += inbuflen_;
