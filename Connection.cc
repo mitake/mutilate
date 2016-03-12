@@ -423,7 +423,7 @@ void Connection::read_callback() {
       break;
 
     case CONN_SETUP:
-      assert(options.binary);
+      assert(options.binary || options.masstree);
       if (!prot->setup_connection_r(input)) return;
       read_state = IDLE;
       break;

@@ -250,6 +250,12 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
   state_ = MT_WAITING_HANDSHAKE_RESPONSE;
 }
 
+bool ProtocolMasstree::setup_connection_r(evbuffer* input)
+{
+  bool b;
+  return handle_response(input, b);
+}
+
 int ProtocolMasstree::get_request(const char* key) {
   lcdf::Json getReq;
   getReq.resize(3);
@@ -286,7 +292,7 @@ bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
 
   inbuflen_ = evbuffer_get_length(input);
   if (!inbuflen_)		// FIXME: what is this?
-    return false;
+    return true;
 
   inbuf_ = reinterpret_cast<char *>(evbuffer_pullup(input, inbuflen_));
   inbufpos_ = 0;

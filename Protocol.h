@@ -162,8 +162,11 @@ public:
   ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev);
   ~ProtocolMasstree() {};
 
-  virtual bool setup_connection_w() { return true; }
-  virtual bool setup_connection_r(evbuffer* input) { return true; }
+  virtual bool setup_connection_r(evbuffer* input);
+  virtual bool setup_connection_w() {
+    // need to let read_state be CONN_SETUP
+    return false;
+  }
   virtual int  get_request(const char* key);
   virtual int  set_request(const char* key, const char* value, int len);
   virtual bool handle_response(evbuffer* input, bool &done);
