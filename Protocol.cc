@@ -306,16 +306,15 @@ bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
   int len = evbuffer_get_length(input);
 
   if (!len) {
-    evbuffer_drain(input, len);
     done = false;
     return false;
   }
 
   char *buf = reinterpret_cast<char *>(evbuffer_pullup(input, len));
   memcpy(inbuf_ + inbufpos_, buf, len);
+  evbuffer_drain(input, len);
 
   if (!receive(len)) {
-    evbuffer_drain(input, len);
     done = false;
     return false;
   }
@@ -323,7 +322,6 @@ bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
   const lcdf::Json& rsp = parser_.result();
   inbufpos_ = 0;
 
-  evbuffer_drain(input, len);
   conn->stats.rx_bytes += len;
 
   done = true;
