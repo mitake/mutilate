@@ -143,9 +143,9 @@ class ProtocolMasstree : public Protocol {
 
   outbuf *out_;
 
-  enum { inbufsz = 64 * 1024, inbufrefill = 56 * 1024 };
+  enum { inbufsz = 64 * 1024 * 1024 };
   char *inbuf_;
-  int inbufpos_;
+  char *inbufpos_;
   int inbuflen_;
   msgpack::streaming_parser parser_;
 

@@ -219,11 +219,17 @@ static outbuf* new_outbuf(int buflen) {
 }
 
 const bool ProtocolMasstree::receive(int len) {
-  parser_.consume(inbuf_ + inbufpos_, inbuf_ + inbufpos_ + len, lcdf::String());
-  inbufpos_ += len;
+  inbuflen_ += len;
+  inbufpos_ = const_cast<char *>(parser_.consume(inbufpos_, inbufpos_ + len, lcdf::String()));
 
   if (parser_.success() && parser_.result().is_a()) {
+    if (inbufpos_ == inbuf_ + inbuflen_) {
+      inbufpos_ = inbuf_;
+      inbuflen_ = 0;
+    }
+
     parser_.reset();
+
     return true;
   }
 
@@ -242,6 +248,8 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
     .set("maxkeylen", MASSTREE_MAXKEYLEN);
 
   inbuf_ = new char[inbufsz];
+  inbufpos_ = inbuf_;
+
   // send handshake request
   msgpack::unparse(*out_, handshake);
   bufferevent_write(bev, out_->buf, out_->n);
@@ -255,12 +263,11 @@ bool ProtocolMasstree::setup_connection_r(evbuffer* input)
     DIE("handshake failed, input length is 0");
 
   char *buf = reinterpret_cast<char *>(evbuffer_pullup(input, len));
-  memcpy(inbuf_ + inbufpos_, buf, len);
+  memcpy(inbufpos_, buf, len);
   if (!receive(len))
     DIE("handshake failed, parse error");
 
   const lcdf::Json& rsp = parser_.result();
-  inbufpos_ = 0;
 
   if (!rsp.is_a() || rsp[1] != Cmd_Handshake + 1 || !rsp[2])
     DIE("handshake failed, invalid response");
@@ -311,7 +318,7 @@ bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
   }
 
   char *buf = reinterpret_cast<char *>(evbuffer_pullup(input, len));
-  memcpy(inbuf_ + inbufpos_, buf, len);
+  memcpy(inbufpos_, buf, len);
   evbuffer_drain(input, len);
 
   if (!receive(len)) {
@@ -320,7 +327,6 @@ bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
   }
 
   const lcdf::Json& rsp = parser_.result();
-  inbufpos_ = 0;
 
   conn->stats.rx_bytes += len;
 
