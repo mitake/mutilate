@@ -218,16 +218,16 @@ static outbuf* new_outbuf(int buflen) {
   return buf;
 }
 
-const lcdf::Json& ProtocolMasstree::receive() {
-  while (!parser_.done())
-    inbufpos_ += parser_.consume(inbuf_ + inbufpos_,
-				 inbuflen_ - inbufpos_,
-				 lcdf::String::make_stable(inbuf_, inbufsz));
-  if (parser_.success() && parser_.result().is_a())
+const bool ProtocolMasstree::receive(int len) {
+  parser_.consume(inbuf_ + inbufpos_, inbuf_ + inbufpos_ + len, lcdf::String());
+  inbufpos_ += len;
+
+  if (parser_.success() && parser_.result().is_a()) {
     parser_.reset();
-  else
-    parser_.result() = lcdf::Json();
-  return parser_.result();
+    return true;
+  }
+
+  return false;
 }
 
 ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev) : Protocol(opts, conn, bev) {
@@ -241,6 +241,7 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
   handshake[2] = lcdf::Json::make_object().set("core", -1)
     .set("maxkeylen", MASSTREE_MAXKEYLEN);
 
+  inbuf_ = new char[inbufsz];
   // send handshake request
   msgpack::unparse(*out_, handshake);
   bufferevent_write(bev, out_->buf, out_->n);
@@ -249,21 +250,23 @@ ProtocolMasstree::ProtocolMasstree(options_t opts, Connection* conn, bufferevent
 
 bool ProtocolMasstree::setup_connection_r(evbuffer* input)
 {
-  inbuflen_ = evbuffer_get_length(input);
-  if (!inbuflen_)
+  int len = evbuffer_get_length(input);
+  if (!len)
     DIE("handshake failed, input length is 0");
 
-  inbuf_ = reinterpret_cast<char *>(evbuffer_pullup(input, inbuflen_));
+  char *buf = reinterpret_cast<char *>(evbuffer_pullup(input, len));
+  memcpy(inbuf_ + inbufpos_, buf, len);
+  if (!receive(len))
+    DIE("handshake failed, parse error");
+
+  const lcdf::Json& rsp = parser_.result();
   inbufpos_ = 0;
-  const lcdf::Json& rsp = receive();
 
   if (!rsp.is_a() || rsp[1] != Cmd_Handshake + 1 || !rsp[2])
     DIE("handshake failed, invalid response");
 
-  evbuffer_drain(input, inbuflen_);
-
-  conn->stats.rx_bytes += inbuflen_;
-  inbufpos_ = inbuflen_ = 0;
+  evbuffer_drain(input, len);
+  conn->stats.rx_bytes += len;
 
   return true;
 }
@@ -300,13 +303,28 @@ int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
 }
 
 bool ProtocolMasstree::handle_response(evbuffer *input, bool &done) {
-  inbuflen_ = evbuffer_get_length(input);
-  if (!inbuflen_)		// FIXME: what is this?
-    return true;
+  int len = evbuffer_get_length(input);
 
-  evbuffer_drain(input, inbuflen_);
-  conn->stats.rx_bytes += inbuflen_;
-  inbufpos_ = inbuflen_ = 0;
+  if (!len) {
+    evbuffer_drain(input, len);
+    done = false;
+    return false;
+  }
+
+  char *buf = reinterpret_cast<char *>(evbuffer_pullup(input, len));
+  memcpy(inbuf_ + inbufpos_, buf, len);
+
+  if (!receive(len)) {
+    evbuffer_drain(input, len);
+    done = false;
+    return false;
+  }
+
+  const lcdf::Json& rsp = parser_.result();
+  inbufpos_ = 0;
+
+  evbuffer_drain(input, len);
+  conn->stats.rx_bytes += len;
 
   done = true;
   return true;

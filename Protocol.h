@@ -149,7 +149,7 @@ class ProtocolMasstree : public Protocol {
   int inbuflen_;
   msgpack::streaming_parser parser_;
 
-  const lcdf::Json& receive();
+  const bool receive(int);
 
 public:
   ProtocolMasstree(options_t opts, Connection* conn, bufferevent* bev);
