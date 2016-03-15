@@ -47,6 +47,9 @@ Connection::Connection(struct event_base* _base, struct evdns_base* _evdns,
   bufferevent_enable(bev, EV_READ | EV_WRITE);
 
   if (options.masstree) {
+    if (options.depth != 1)
+      DIE("depth (%d) > 1 cannot be used with masstree protocol", options.depth);
+
     prot = new ProtocolMasstree(options, this, bev);
   } else if (options.binary) {
     prot = new ProtocolBinary(options, this, bev);
