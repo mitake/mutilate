@@ -123,9 +123,9 @@ class ConnectionStats {
   }
 
   static void print_header() {
-    printf("%-7s %7s %7s %7s %7s %7s %7s %7s %7s\n",
+    printf("%-7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s\n",
            "#type", "avg", "std", "min", /*"1st",*/ "5th", "10th",
-           "90th", "95th", "99th");
+           "90th", "95th", "99th", "99.9th", "99.99th");
   }
 
 #ifdef USE_ADAPTIVE_SAMPLER
@@ -193,17 +193,17 @@ class ConnectionStats {
   void print_stats(const char *tag, LogHistogramSampler &sampler,
                    bool newline = true) {
     if (sampler.total() == 0) {
-      printf("%-7s %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f",
-             tag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+      printf("%-7s %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f",
+             tag, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
       if (newline) printf("\n");
       return;
     }
 
-    printf("%-7s %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f",
+    printf("%-7s %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f",
            tag, sampler.average(), sampler.stddev(),
            sampler.get_nth(0), /*sampler.get_nth(1),*/ sampler.get_nth(5),
            sampler.get_nth(10), sampler.get_nth(90),
-           sampler.get_nth(95), sampler.get_nth(99));
+           sampler.get_nth(95), sampler.get_nth(99), sampler.get_nth(99.9), sampler.get_nth(99.99));
 
     if (newline) printf("\n");
   }
