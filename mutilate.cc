@@ -154,6 +154,13 @@ static bool s_send (zmq::socket_t &socket, const std::string &string) {
  */
 
 void agent() {
+  if (args.daemonize_given) {
+    if (daemon(1, 1) < 0) {
+      fprintf(stderr, "daemonize failed: %m");
+      exit(1);
+    }
+  }
+
   zmq::context_t context(1);
 
   zmq::socket_t socket(context, ZMQ_REP);

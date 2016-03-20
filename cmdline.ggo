@@ -74,6 +74,7 @@ overrides --connections." int
 option "measure_qps" Q "Explicitly set master client QPS, \
 spread across threads and connections." int
 option "measure_depth" D "Set master client connection depth." int
+option "daemonize" - "daemonize in agent mode"
 
 text "
 The --measure_* options aid in taking latency measurements of the
