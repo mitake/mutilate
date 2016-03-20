@@ -9,7 +9,7 @@ env['HAVE_POSIX_BARRIER'] = True
 env.Append(CPPPATH = ['/usr/local/include', '/opt/local/include'])
 env.Append(LIBPATH = ['/opt/local/lib'])
 env.Append(CCFLAGS = '-std=c++11 -D_GNU_SOURCE')
-env.Append(LINKFLAGS = '-static')
+# env.Append(LINKFLAGS = '-static')
 if sys.platform == 'darwin':
     env['CC']  = 'clang'
     env['CXX'] = 'clang++'
