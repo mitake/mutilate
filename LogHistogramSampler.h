@@ -21,6 +21,7 @@ public:
 
   double sum;
   double sum_sq;
+  double max_;
 
   LogHistogramSampler() = delete;
   LogHistogramSampler(int _bins) : sum(0.0), sum_sq(0.0) {
@@ -41,6 +42,8 @@ public:
     sum += s;
     sum_sq += s*s;
 
+    max_ = std::max(max_, s);
+
     //    I("%f", sum);
 
     if ((int64_t) bin < 0) {
@@ -55,6 +58,10 @@ public:
   double average() {
     //    I("%f %d", sum, total());
     return sum / total();
+  }
+
+  double max() {
+    return max_;
   }
 
   double stddev() {
