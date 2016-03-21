@@ -123,8 +123,8 @@ class ConnectionStats {
   }
 
   static void print_header() {
-    printf("%-7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s\n",
-           "#type", "avg", "std", "min", /*"1st",*/ "5th", "10th",
+    printf("%-7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s %7s\n",
+           "#type", "avg", "std", "min", "max", /*"1st",*/ "5th", "10th",
            "90th", "95th", "99th", "99.9th", "99.99th");
   }
 

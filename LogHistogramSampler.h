@@ -24,7 +24,7 @@ public:
   double max_;
 
   LogHistogramSampler() = delete;
-  LogHistogramSampler(int _bins) : sum(0.0), sum_sq(0.0) {
+  LogHistogramSampler(int _bins) : sum(0.0), sum_sq(0.0), max_(0.0) {
     assert(_bins > 0);
 
     bins.resize(_bins + 1, 0);
@@ -108,6 +108,8 @@ public:
 
     sum += h.sum;
     sum_sq += h.sum_sq;
+
+    max_ = std::max(max_, h.max_);
 
     for (auto i: h.samples) samples.push_back(i);
   }
