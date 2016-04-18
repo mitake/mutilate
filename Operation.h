@@ -20,6 +20,10 @@ public:
   // string value;
 
   double time() const { return (end_time - start_time) * 1000000; }
+
+  bool operator<(const Operation& rhs) const {
+    return start_time < rhs.start_time;
+  }
 };
 
 

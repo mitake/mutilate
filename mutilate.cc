@@ -12,6 +12,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
@@ -37,6 +38,7 @@
 #include "log.h"
 #include "mutilate.h"
 #include "util.h"
+#include "Operation.h"
 
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
@@ -625,7 +627,11 @@ int main(int argc, char **argv) {
       if ((file = fopen(args.save_arg, "w")) == NULL)
         DIE("--save: failed to open %s: %s", args.save_arg, strerror(errno));
 
-      for (auto i: stats.get_sampler.samples) {
+      std::vector<Operation> samples;
+      samples.insert(samples.end(), stats.get_sampler.samples.begin(), stats.get_sampler.samples.end());
+      samples.insert(samples.end(), stats.set_sampler.samples.begin(), stats.set_sampler.samples.end());
+      std::sort(samples.begin(), samples.end());
+      for (auto i: samples) {
         fprintf(file, "%f %f\n", i.start_time - boot_time, i.time());
       }
     }
