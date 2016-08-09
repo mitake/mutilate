@@ -283,7 +283,8 @@ int ProtocolMasstree::get_request(const char* key) {
   getReq.resize(3);
   getReq[0] = seq_get_++;
   getReq[1] = Cmd_Get;
-  getReq[2] = lcdf::String::make_stable(key);
+  // getReq[2] = lcdf::String::make_stable(key);
+  getReq[2] = lcdf::String::make_stable("k");
 
   msgpack::unparse(*out_, getReq);
   bufferevent_write(bev, out_->buf, out_->n);
@@ -298,8 +299,11 @@ int ProtocolMasstree::set_request(const char* key, const char* value, int len) {
   putReq.resize(4);
   putReq[0] = seq_set_++;
   putReq[1] = Cmd_Replace;
-  putReq[2] = lcdf::String::make_stable(key);
+  putReq[2] = lcdf::String::make_stable("k");
+  // putReq[3] = lcdf::String::make_stable("v");
+  // putReq[2] = lcdf::String::make_stable(key);
   putReq[3] = lcdf::String::make_stable(value);
+  
 
   msgpack::unparse(*out_, putReq);
   bufferevent_write(bev, out_->buf, out_->n);
